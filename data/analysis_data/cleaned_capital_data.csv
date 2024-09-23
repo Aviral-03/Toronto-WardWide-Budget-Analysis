@@ -1,0 +1,90 @@
+"","ward_id","ward","category","total_10_year"
+"1",1,"Etobicoke North","Growth Related",65750
+"2",1,"Etobicoke North","Service Improvement and Enhancement",5142
+"3",1,"Etobicoke North","State of Good Repair",3271.47
+"4",2,"Etobicoke Centre","Growth Related",89582
+"5",2,"Etobicoke Centre","Service Improvement and Enhancement",37154
+"6",2,"Etobicoke Centre","State of Good Repair",5526
+"7",3,"Etobicoke-Lakeshore","Growth Related",125438
+"8",3,"Etobicoke-Lakeshore","Service Improvement and Enhancement",410808.53
+"9",3,"Etobicoke-Lakeshore","State of Good Repair",2926.85
+"10",4,"Parkdale-High Park","Growth Related",208205
+"11",4,"Parkdale-High Park","Legislated",800
+"12",4,"Parkdale-High Park","Service Improvement and Enhancement",8615.93
+"13",4,"Parkdale-High Park","State of Good Repair",5976.8
+"14",5,"York South-Weston","Growth Related",73085
+"15",5,"York South-Weston","Legislated",-58.5
+"16",5,"York South-Weston","Service Improvement and Enhancement",9442
+"17",5,"York South-Weston","State of Good Repair",2759
+"18",6,"York Centre","Growth Related",34121
+"19",6,"York Centre","Service Improvement and Enhancement",1000
+"20",6,"York Centre","State of Good Repair",10945.3
+"21",7,"Humber River-Black Creek","Growth Related",118597
+"22",7,"Humber River-Black Creek","Service Improvement and Enhancement",11488
+"23",7,"Humber River-Black Creek","State of Good Repair",5371.5
+"24",8,"Eglinton-Lawrence","Growth Related",123694
+"25",8,"Eglinton-Lawrence","Service Improvement and Enhancement",18793
+"26",8,"Eglinton-Lawrence","State of Good Repair",3733.45
+"27",9,"Davenport","Growth Related",101395
+"28",9,"Davenport","Health and Safety",202
+"29",9,"Davenport","Service Improvement and Enhancement",9756
+"30",9,"Davenport","State of Good Repair",456
+"31",10,"Spadina-Fort York","Growth Related",419000
+"32",10,"Spadina-Fort York","Health and Safety",2570
+"33",10,"Spadina-Fort York","Legislated",2279
+"34",10,"Spadina-Fort York","Service Improvement and Enhancement",172023
+"35",10,"Spadina-Fort York","State of Good Repair",358645.08
+"36",11,"University-Rosedale","Growth Related",170416
+"37",11,"University-Rosedale","Health and Safety",16721
+"38",11,"University-Rosedale","Service Improvement and Enhancement",1383801
+"39",11,"University-Rosedale","State of Good Repair",67948.4
+"40",12,"Toronto-St. Pauls","Growth Related",49249
+"41",12,"Toronto-St. Pauls","Legislated",700
+"42",12,"Toronto-St. Pauls","Service Improvement and Enhancement",3729
+"43",12,"Toronto-St. Pauls","State of Good Repair",22137
+"44",13,"Toronto Centre","Growth Related",86698
+"45",13,"Toronto Centre","Health and Safety",2472
+"46",13,"Toronto Centre","Legislated",18467
+"47",13,"Toronto Centre","Service Improvement and Enhancement",749035
+"48",13,"Toronto Centre","State of Good Repair",54964
+"49",14,"Toronto-Danforth","Growth Related",167132
+"50",14,"Toronto-Danforth","Service Improvement and Enhancement",10340.5
+"51",14,"Toronto-Danforth","State of Good Repair",21163.55
+"52",15,"Don Valley West","Growth Related",5570
+"53",15,"Don Valley West","Service Improvement and Enhancement",7480
+"54",15,"Don Valley West","State of Good Repair",1912
+"55",16,"Don Valley East","Growth Related",20705
+"56",16,"Don Valley East","Service Improvement and Enhancement",136142
+"57",16,"Don Valley East","State of Good Repair",3754
+"58",17,"Don Valley North","Growth Related",8544
+"59",17,"Don Valley North","Service Improvement and Enhancement",2561
+"60",17,"Don Valley North","State of Good Repair",3734.94
+"61",18,"Willowdale","Growth Related",61210
+"62",18,"Willowdale","Health and Safety",1152
+"63",18,"Willowdale","Legislated",8863
+"64",18,"Willowdale","Service Improvement and Enhancement",2000
+"65",18,"Willowdale","State of Good Repair",21400.47
+"66",19,"Beaches-East York","Growth Related",33965
+"67",19,"Beaches-East York","Service Improvement and Enhancement",31699.01
+"68",19,"Beaches-East York","State of Good Repair",3070
+"69",20,"Scarborough Southwest","Growth Related",60000
+"70",20,"Scarborough Southwest","Health and Safety",5230
+"71",20,"Scarborough Southwest","Service Improvement and Enhancement",7001
+"72",20,"Scarborough Southwest","State of Good Repair",2706
+"73",21,"Scarborough Centre","Growth Related",93335
+"74",21,"Scarborough Centre","Service Improvement and Enhancement",11174.5
+"75",21,"Scarborough Centre","State of Good Repair",38696.5
+"76",22,"Scarborough-Agincourt","Growth Related",11490
+"77",22,"Scarborough-Agincourt","Service Improvement and Enhancement",12893
+"78",22,"Scarborough-Agincourt","State of Good Repair",292.13
+"79",23,"Scarborough-North","Growth Related",171615
+"80",23,"Scarborough-North","Service Improvement and Enhancement",2981
+"81",23,"Scarborough-North","State of Good Repair",485.5
+"82",24,"Scarborough-Guildwood","Growth Related",52375
+"83",24,"Scarborough-Guildwood","Health and Safety",485
+"84",24,"Scarborough-Guildwood","Legislated",200
+"85",24,"Scarborough-Guildwood","Service Improvement and Enhancement",6839
+"86",24,"Scarborough-Guildwood","State of Good Repair",2677.1
+"87",25,"Scarborough-Rouge Park","Growth Related",85170.8
+"88",25,"Scarborough-Rouge Park","Service Improvement and Enhancement",25883
+"89",25,"Scarborough-Rouge Park","State of Good Repair",131930

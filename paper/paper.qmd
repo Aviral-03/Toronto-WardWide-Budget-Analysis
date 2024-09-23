@@ -1,0 +1,505 @@
+---
+title: "Who Gets What: How Population and Income Shape Toronto’s Budget Decisions"
+subtitle: "Understanding the Impact of Demographics and Economic Factors on City Spending Across 25 Wards"
+author: 
+  - Aviral Bhardwaj
+thanks: "Code and data are available at: LINK."
+date: today
+date-format: long
+abstract: "This study investigates how population density and average household income affect budget allocations across Toronto’s 25 wards. Using data from the city's 2023-2032 Capital Budget Plan and 2021 Ward Profiles, we analyze spending patterns in key areas like health and safety, infrastructure, and community services. Our findings reveal that higher population densities do not guarantee proportionally greater investments in essential services, while wealthier wards often receive larger capital expenditures. These insights highlight potential disparities in resource distribution, emphasizing the need for more equitable urban budget planning to address diverse community needs."
+format: pdf
+number-sections: true
+toc: true
+bibliography: references.bib
+---
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+# Download the package
+# install.packages("opendatatoronto")
+# install.packages("styler")
+# install.packages("arrow")
+# install.packages("kableExtra")
+# install.packages("ggrepel")
+# install.packages("patchwork")
+# install.packages("sf")
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+library(tidyverse)
+library(opendatatoronto)
+library(readxl)
+library(styler)
+library(dplyr)
+library(arrow)
+library(ggrepel)
+library(knitr)
+library(kableExtra)
+library(patchwork)
+library(sf)
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# get package
+url <- "https://ckan0.cf.opendata.inter.prod-toronto.ca/dataset/6678e1a6-d25f-4dff-b2b7-aa8f042bc2eb/resource/16a31e1d-b4d9-4cf0-b5b3-2e3937cb4121/download/2023-WardProfiles-2011-2021-CensusData.xlsx"
+
+# load the first datastore resource as a sample
+local_file <- tempfile(fileext = ".xlsx")
+download.file(url, local_file, mode = "wb")
+raw_ward_data <- readxl::read_xlsx(local_file)
+
+# Write CSV
+write.csv(raw_ward_data, "../data/raw_data/raw_ward_data.csv")
+
+# clean up
+unlink(local_file)
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+raw_data_2 <- read_csv("../data/raw_data/raw_ward_data.csv")
+
+# Only keep the relevant columns:
+cleaned_ward_data <-
+  raw_data_2[c(18, 997, 1307, 1383), ] 
+cleaned_ward_data <- as.data.frame(t(cleaned_ward_data)) |>
+  slice(-1) |>
+  slice(-1) |>
+  rename(population = V1, income = V4)
+
+# Remove the first row:
+cleaned_ward_data <- cleaned_ward_data[-1, ]
+# Add ward_id column:
+cleaned_ward_data$ward_id = 1:25
+
+# Set row name as ward_id
+rownames(cleaned_ward_data) <- cleaned_ward_data$ward_id
+
+ward_names <- c("Etobicoke North", "Etobicoke Centre", "Etobicoke-Lakeshore", 
+                "Parkdale-High Park","York South-Weston", "York Centre", 
+                "Humber River-Black Creek", "Eglinton-Lawrence",
+                "Davenport", "Spadina-Fort York", "University-Rosedale",
+                "Toronto-St. Paul's", "Toronto Centre", "Toronto-Danforth",
+                "Don Valley West", "Don Valley East", "Don Valley North",
+                "Willowdale", "Beaches-East York", "Scarborough Southwest",
+                "Scarborough Centre", "Scarborough-Agincourt",
+                "Scarborough North", "Scarborough-Guildwood",
+                "Scarborough-Rouge Park")
+
+# Add ward name column:
+cleaned_ward_data$ward = ward_names
+
+# Calculate the percentage of uneducated people in each ward:
+cleaned_ward_data <- cleaned_ward_data[c("ward_id", "ward", "population", "income")] |>
+  rename("average_household_income" = "income") |>
+  mutate(average_household_income = as.numeric(average_household_income)) |>
+  arrange(ward_id)
+
+
+write.csv(cleaned_ward_data, "../data/analysis_data/cleaned_ward_data.csv")
+write_parquet(cleaned_ward_data, "../data/analysis_data/cleaned_ward_data.parquet")
+
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+# Captial Budgets in Toronto
+url <- "https://ckan0.cf.opendata.inter.prod-toronto.ca/dataset/7d3bcf2f-8eca-4ed5-a352-a34adb130931/resource/50f76ab0-3ed3-41b4-8350-49c2c52911f9/download/2023-2032-capital-budget-and-plan-details.xlsx"
+
+# load the first datastore resource as a sample
+local_file <- tempfile(fileext = ".xlsx")
+download.file(url, local_file, mode = "wb")
+raw_capital_data <- readxl::read_xlsx(local_file)
+
+# Write CSV
+write.csv(raw_capital_data, "../data/raw_data/raw_capital_data.csv")
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+raw_capital_data_2 <- read_csv("../data/raw_data/raw_capital_data.csv")
+
+# Only keep the relevant columns with name Total 10 Year, Ward Number, Ward, Category
+cleaned_capital_data <- raw_capital_data_2[c(15, 16, 17, 18)] |>
+  rename("ward_id" = "Ward Number") |>
+  rename("ward" = "Ward") |>
+  rename("category" = "Category") |>
+  rename("total_10_year" = "Total 10 Year")
+
+# Filter out the rows in ward_id that are CW
+cleaned_capital_data <- cleaned_capital_data %>%
+  filter(ward_id != "CW")
+
+# Combine the rows with the same ward_id and category and sum the total_10_year keep the ward_name
+cleaned_capital_data <- cleaned_capital_data |>
+  group_by(ward_id, ward, category) |>
+  summarise(total_10_year = sum(total_10_year)) |>
+  # change ward_id to numeric
+  mutate(ward_id = as.numeric(ward_id)) |>
+  arrange(ward_id)
+
+cleaned_capital_data <- cleaned_capital_data[c("ward_id", "ward", "category", "total_10_year")]
+
+# Write the cleaned data to CSV and Parquet
+write.csv(cleaned_capital_data, "../data/analysis_data/cleaned_capital_data.csv")
+write_parquet(cleaned_capital_data, "../data/analysis_data/cleaned_capital_data.parquet")
+  
+```
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+ward_data <- read.csv("../data/analysis_data/cleaned_ward_data.csv")
+capital_data <- read.csv("../data/analysis_data/cleaned_capital_data.csv")
+
+```
+
+# Introduction {#sec-intro}
+
+In urban governance, equitable allocation of municipal budgets is crucial for addressing the diverse social, economic, and infrastructural needs of cities. This challenge is particularly acute in Toronto, one of Canada's largest and most diverse cities, where 25 wards compete for limited resources. Effective allocation requires a careful balance, but understanding how demographic and economic factors influence these decisions remains an underexplored area. This study addresses this gap by investigating the relationship between these factors and Toronto's budget allocations, with implications for more informed, data-driven urban planning.
+
+Following her election in 2023, Mayor Olivia Chow prioritized resolving Toronto’s housing crisis, improving transportation, and addressing social inequities [@toronto_2024_budget]. The city’s 2024 budget reflects these priorities, with notable investments in affordable housing, transit, and community safety initiatives. Simultaneously, the Chief Financial Officer underscored the importance of long-term infrastructure development, highlighting the city’s 10-year capital plan [@toronto_2024_budget]. However, it remains unclear to what extent these priorities translate into equitable budget allocations across Toronto's wards, particularly in health and safety or growth-related expenditures.
+
+To explore this issue, this study leverages multiple datasets from the City of Toronto’s Open Data Portal, including demographic information from the 2021 Ward Profiles and budget data from the 2023-2032 Capital Budget Plan. Our analysis focuses on two key demographic factors—population density and average household income—and examines their causal effect on budget allocations across categories such as Health and Safety, Growth-Related Expenditures, and Service Improvement. By focusing on these variables, we aim to uncover whether Toronto’s budget distribution aligns with the priorities of Mayor Chow and the city’s Chief Financial Officer.
+
+Our findings reveal that wards with higher population densities do not consistently receive a proportionate share of investments in essential areas like health and safety. While wealthier wards tend to receive more substantial capital expenditures, however, the budget does not show a strong bias in their favor overall for other categories. These results raise concerns about potential disparities in resource distribution and highlight the need for more equitable budget planning. This paper is structured as follows: [@sec-data] discusses the data and methodologies used, followed by discussions of the relationship between variables of interest, and [@sec-discussion] explores the broader implications for urban governance and fiscal policy.
+
+# Data {#sec-data}
+
+The raw data was sourced from the City of Toronto's Open Data Portal using the `opendatatoronto` [@openDataToronto] package. Three datasets were downloaded: `2023 Ward Profiles (25-Ward Model)`[@toronto_ward_profiles], `2023-2032 Capital Budget and Plan Details`[@toronto_budget_plan], and `City Wards`[@toronto_city_wards]. The data, provided in Excel and CSV formats, was cleaned and analyzed using R [@citeR] programming language. The `readxl` [@readxl] package was used for reading Excel files. Other R packages used include `tidyverse` [@tidyverse], `styler` [@styler], and `dplyr` [@dplyr] for creating tables and plotting graphs.
+
+## Measurement
+Our research question and estimand analyse the relationship between key demographic and economic factors—specifically, population and average household income—and the budget allocation across various categories in Toronto's 25 wards. Population is a critical demographic indicator, representing the number of residents in each ward, while average household income reflects economic well-being, influencing access to resources and quality of life [@Schaeffer]. Our primary aim is to estimate the impact of these variables on budget allocations for different categories, including Health and Safety, Growth-Related expenditures, State of Good Repair, and Service Improvement and Enhancement.
+
+Population density is expected to affect the demand for services and infrastructure, while average household income may shape how resources are distributed across wards, reflecting broader economic disparities. The estimand is the causal effect of these factors on the allocation of funds, and the estimator will quantify how shifts in population and income levels influence budgetary decisions. By understanding this relationship, we aim to offer insights into how demographic and economic variables drive municipal spending patterns in different categories across the city.
+
+
+## Ward Profiles (25-Ward Model) {#sec-ward-profiles}
+
+The 2021 Ward Profiles [@toronto_ward_profiles], based on the 25-Ward model were provided by City Planning. These profiles included census data from the 2021, 2016, and 2011 Census of Population, covering demographic, social, and economic information for each ward in Toronto. This data-set was included in this analysis to provide insights into the population and average household income for each ward, providing insights into the city's socioeconomic landscape. 25-Ward model was used instead of the 44-Ward model as it was the most recent data available at the time of analysis and matched the Capital Budget data.
+
+The data was stored in an Excel workbook with multiple tabs, but for this analysis, we used the first tab, `2016 Census One variable`, which contains data for all 25 wards (Ward 1, Ward 2, ..., Ward 25). After cleaning, the data was saved in CSV and Parquet formats, with the following columns:
+
+-   `ward_id`: unique identifier for each ward,
+-   `ward`: ward name,
+-   `population`: total population,
+-   `income`: average household income.
+
+The ward names were manually entered into the cleaned data and the `ward_id` was set as the row name. A sample of the data can be seen in [@tbl-ward-profile-data]. These variables were collected through methods including online responses, mailed questionnaires, the Census Help Line, and enumerators [@nhs_canada].
+
+```{r}
+#| echo: false
+#| message: false
+#| label: tbl-ward-profile-data
+#| tbl-cap: Sample of Cleaned Toronto Ward Profile Data
+#| tbl-pos: "h"
+
+# Remove the first column
+ward_data |>
+  select(-1) |>
+  head(5) |>
+  kable(
+    col.names = c("Ward ID", "Ward Name", "Population", "Average Household Income"),
+    booktabs = TRUE,
+    align = "c"
+  )
+```
+
+## Capital Budget and Plan Details {#sec-capital-budget}
+
+The 2023-2032 Capital Budget and Plan Details dataset [@toronto_budget_plan], published by Financial Planning and updated on May 1, 2024, provides the 10-year capital budget for Toronto's wards. This dataset covers allocations for fixed assets such as land, buildings, equipment, and new facility construction. We used it to analyze the distribution of capital budget allocations across various categories and wards. The 2023-2032 time frame was selected to align with Ward Profiles data and to reflect the planning relevance following the 2022 Municipal Elections.
+
+Key columns include `Project Name`, yearly budget allocations from 2023 to 2032, `Ward Number`, `Ward`, `Category`, and `Total 10 Year` (Sum of Year 1 to 10), where the budget is in thousands of dollars (e.g., 10 = \$10,000). However,  [@tbl-capital-budget-data] shows a sample of the cleaned data and our variables of interest:
+
+-   `Total 10-year capital budget` allocated to each ward
+-   `Category of the Capital Budget`, including fields like `Service Improvement and Enhancement`, `Growth Related`, and `State of Good Repair`.
+
+Rows with `CW` (city-wide budget) were removed since they were applicable to all wards and to avoid large values, keeping only rows specific to each ward. The cleaned data was saved in CSV and Parquet formats for further analysis.
+
+```{r}
+#| echo: false
+#| message: false
+#| label: tbl-capital-budget-data
+#| tbl-cap: Sample of Cleaned Toronto Capital Budget Data
+#| tbl-pos: "h"
+
+capital_data |>
+  select(-1) |>
+  head(5) |>
+  kable(
+    col.names = c("Ward ID", "Ward Name", "Category", "Total 10-Year Budget (in 000s)"),
+    booktabs = TRUE,
+    align = "c"
+  )
+```
+
+## City Wards {#sec-ward-names}
+
+The City Wards dataset [@toronto_city_wards], published by the City Clerk's Office and last updated on July 22, 2024, contains geographical information about each ward, including the ward ID, ward name, and ward boundary. This dataset, effective January 1, 2024, was used to map the `ward_id` to the ward name in the cleaned data. Key columns include:
+
+-   `ward_id`: unique identifier for each ward,
+-   `ward`: ward name,
+-   `ward_boundary`: geographical boundary of the ward.
+
+The ward names were mapped to the `ward_id` and integrated with the Ward Profiles [@sec-ward-profiles] and Capital Budget data sets [@sec-capital-budget] to create the final data set for analysis. This dataset was not used directly in the analysis but was essential for mapping the ward names to the ward IDs in the cleaned data.
+
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+combined_data <- merge(ward_data, capital_data, by = "ward_id") |>
+  select("ward_id", "ward.x", "population", "average_household_income", "category", "total_10_year") |>
+  rename("ward" = "ward.x")
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| label: fig-toronto-map-population
+#| fig-cap: "Map of Toronto highlighting the population by ward"
+#| fig.pos: 'H'
+#| fig.height: 5
+
+# URL to the zip file
+url <- "https://ckan0.cf.opendata.inter.prod-toronto.ca/dataset/5e7a8234-f805-43ac-820f-03d7c360b588/resource/35f67d86-cfc8-4483-8d77-50d035b010d9/download/25-ward-model-december-2018-wgs84-latitude-longitude.zip"
+
+# Temporary file to store the downloaded zip
+temp_zip <- tempfile(fileext = ".zip")
+
+# Download the zip file
+download.file(url, temp_zip, mode = "wb")
+
+# Unzip the file to a temporary directory
+temp_dir <- tempdir()
+unzip(temp_zip, exdir = temp_dir)
+
+# Assuming the shapefile is directly in the unzipped folder and has a standard .shp extension
+shapefiles <- list.files(temp_dir, pattern = "\\.shp$", full.names = TRUE)
+
+# Read the shapefile (replace 'shapefiles[1]' with the specific file if there are multiple shapefiles)
+toronto_map <- st_read(shapefiles[1], quiet = TRUE)
+
+# Clean up the downloaded zip file
+unlink(temp_zip)
+
+# Merge analysis_data with toronto_map by ward_id
+toronto_map <- merge(toronto_map, ward_data, by.x = "AREA_NAME", by.y = "ward") |>
+  rename("income" = "average_household_income")
+
+color_scale <- scale_fill_gradient(low = "lightblue", high = "darkblue")
+
+
+# Plot with facet_wrap for average household income and population
+plot1 <-ggplot() +
+  geom_sf(data = toronto_map, aes(fill = population)) +
+  geom_sf_text(data = toronto_map, aes(label = ward_id), size = 2, color = "white") +
+  color_scale +
+  theme_minimal() +
+  labs(x = "Longitude", y = "Latitude") +
+  theme(legend.position = "right")
+
+
+plot2 <- ggplot() +
+  geom_sf(data = toronto_map, aes(fill = income)) +
+  geom_sf_text(data = toronto_map, aes(label = ward_id), size = 2, color = "white") +
+  color_scale +
+  theme_minimal() +
+  labs(x = "Longitude", y = "Latitude") +
+  theme(legend.position = "right")
+
+plot1 / plot2
+
+
+```
+
+## Ward Profiles Results {#sec-ward-profile-results}
+
+The City of Toronto is divided into 25 wards, and the 2021 census data highlights significant disparities in population and average household income among them. As shown in [@fig-toronto-map-population], Spadina-Fort York (Ward 10) and Etobicoke-Lakeshore (Ward 3) have the highest population densities, with 135,400 and 139,920 residents, respectively. In contrast, Don Valley West (Ward 15) has a lower population density of 101,025 but boasts the highest average household income at \$224,800.
+
+Population distribution reveals a concentration in the western part of the city and downtown areas. Notably, wards like Etobicoke Centre (Ward 2) and Etobicoke-Lakeshore (Ward 3), situated farther from downtown, have lower costs of living and correspondingly lower average household incomes, such as Etobicoke North (Ward 2) with \$95,200.
+
+An interesting pattern emerges around Don Valley West (Ward 15), which has the highest average household income. Wards such as University-Rosedale (Ward 11), Toronto-St. Paul's (Ward 12), and Eglinton-Lawrence (Ward 8) are clustered together, indicating a geographical correlation among high-income areas. Conversely, the wards with the highest population densities do not overlap with those that have the highest average household incomes, highlighting distinct socioeconomic patterns within the city.
+
+This analysis will further explore the relationships between average household income, population, and budget allocations across various categories, with a focus on wards exhibiting higher average household incomes and population densities.
+
+## Relationship between Average Household Income & Population with Budget Allocation for Health and Safety
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig.cap: "Health and Safety Budget by Ward"
+#| label: fig-health-safety-budget
+#| fig-pos: "h"
+#| fig.width: 10
+#| fig.height: 5
+
+# Plot for Average Household Income by Ward
+combined_data |>
+  filter(category == "Health and Safety") |>
+  select(ward_id, average_household_income, population, total_10_year) |>
+  pivot_longer(cols = c("average_household_income", "population"),
+               names_to = "variable",
+               values_to = "value") |>
+  ggplot(aes(x = value, y = total_10_year, label = ward_id)) +
+  geom_point() +
+  geom_text_repel(hjust = -0.5, vjust = 0.5) +
+  geom_smooth(method = "lm", color = "blue", se = TRUE) +
+  facet_wrap(~variable, scales = "free", labeller = as_labeller(c(
+    average_household_income = "Average Household Income",
+    population = "Population"
+  ))) +
+  theme_minimal() +
+  labs(x = "Average Household Income / Population",
+       y = "Total 10-Year Budget (in 000s)")
+```
+
+[@fig-health-safety-budget] illustrates the relationship between average household income, population, and the total 10-year budget allocation for Health and Safety projects. The linear regression lines indicate a positive correlation, suggesting that higher average household incomes and larger populations are associated with increased budget allocations for Health and Safety.
+
+As noted in [@sec-ward-profile-results], Ward 15 (Don Valley West) has the highest average household income, and surrounding wards also exhibit elevated incomes. This trend is reflected in the budget allocations, with Ward 11 receiving a higher budget for Health and Safety projects compared to other wards. This implies that areas with greater average household incomes tend to receive more funding for such initiatives.
+
+Ward 10 (Spadina-Fort York), despite its high population density, ranks second in budget allocation. This indicates a prioritization of higher-income areas for funding, even though Ward 10 has a significant population. The lower budget allocation for Ward 10 compared to Ward 11 suggests a strategic focus on income levels rather than solely on population density.
+
+It is important to note that some data points are missing in the plot for other wards, which may result from incomplete data or other factors. Further analysis is warranted to better understand the intricate relationships among average household income, population, and budget allocations for Health and Safety projects.
+
+## Relationship between Average Household Income & Population with Budget Allocation for Growth Related Projects
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| label: fig-growth-related-budget
+#| fig.cap: "Growth Related Budget"
+#| fig-pos: "h"
+#| fig.width: 10
+#| fig.height: 5
+
+# Plot for Average Household Income by Ward
+combined_data |>
+  filter(category == "Growth Related") |>
+  select(ward_id, average_household_income, population, total_10_year) |>
+  pivot_longer(cols = c("average_household_income", "population"),
+               names_to = "variable",
+               values_to = "value") |>
+  ggplot(aes(x = value, y = total_10_year, label = ward_id)) +
+  geom_point() +
+  geom_text_repel(hjust = -0.5, vjust = 0.5) +
+  geom_smooth(method = "lm", color = "blue", se = TRUE) +
+  facet_wrap(~variable, scales = "free", labeller = as_labeller(c(
+    average_household_income = "Average Household Income",
+    population = "Population"
+  ))) +
+  theme_minimal() +
+  labs(x = "Average Household Income / Population",
+       y = "Total 10-Year Budget (in 000s)")
+
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig.cap: "State of Good Repair Budget by Ward"
+#| label: fig-state-good-repair-budget
+#| fig-pos: "h"
+#| fig.width: 10
+#| fig.height: 5
+
+# Plot for Average Household Income by Ward
+combined_data |>
+  filter(category == "State of Good Repair") |>
+  select(ward_id, average_household_income, population, total_10_year) |>
+  pivot_longer(cols = c("average_household_income", "population"),
+               names_to = "variable",
+               values_to = "value") |>
+  ggplot(aes(x = value, y = total_10_year, label = ward_id)) +
+  geom_point() +
+  geom_text_repel(hjust = -0.5, vjust = 0.5) +
+  geom_smooth(method = "lm", color = "blue", se = TRUE) +
+  facet_wrap(~variable, scales = "free", labeller = as_labeller(c(
+    average_household_income = "Average Household Income",
+    population = "Population"
+  ))) +
+  theme_minimal() +
+  labs(x = "Average Household Income / Population",
+       y = "Total 10-Year Budget (in 000s)")
+
+```
+
+[@fig-growth-related-budget] presents the relationship between average household income, population, and the total 10-year budget allocation for Growth-Related projects. The linear regression line for average household income remains relatively flat, hovering around \$100,000. This suggests that budget allocations for Growth-Related projects are not significantly influenced by the average household income. In other words, funds for these projects are distributed more uniformly across wards, regardless of their income levels. A similar pattern can be observed in [@fig-state-good-repair-budget] where the budget allocation is not strongly correlated with average household income.
+
+In contrast, the linear regression line for population tells a different story. It shows a positive correlation between population size and budget allocation for Growth-Related projects. Wards with higher population densities, such as Ward 10 (Spadina-Fort York), Ward 13 (Toronto Centre), Ward 5 (York South-Weston), and Ward 2 (Etobicoke North), receive larger portions of the Growth-Related budget. This indicates that population density plays a key role in determining how much funding a ward receives for Growth-Related projects, with more populous wards receiving a greater share of the budget.
+
+## Relationship between Average Household Income & Population with Budget Allocation for Service Improvement and Enhancement
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig.cap: "Service Improvement and Enhancement by Ward"
+#| label: fig-service-improvement-budget
+#| fig-pos: "h"
+#| fig.width: 10
+#| fig.height: 5
+
+# Plot for Average Household Income by Ward
+combined_data |>
+  filter(category == "Service Improvement and Enhancement") |>
+  select(ward_id, average_household_income, population, total_10_year) |>
+  pivot_longer(cols = c("average_household_income", "population"),
+               names_to = "variable",
+               values_to = "value") |>
+  ggplot(aes(x = value, y = total_10_year, label = ward_id)) +
+  geom_point() +
+  geom_text_repel(hjust = -0.5, vjust = 0.5) +
+  geom_smooth(method = "lm", color = "blue", se = TRUE) +
+  facet_wrap(~variable, scales = "free", labeller = as_labeller(c(
+    average_household_income = "Average Household Income",
+    population = "Population"
+  ))) +
+  theme_minimal() +
+  labs(x = "Average Household Income / Population",
+       y = "Total 10-Year Budget (in 000s)")
+
+```
+
+[@fig-service-improvement-budget] illustrates the relationship between average household income, population, and the total 10-year budget allocation for Service Improvement and Enhancement projects. These projects  aim to enhance the quality of services provided to residents and improve the overall infrastructure of the city [@toronto_improvements].
+
+The relatively flat linear regression lines for both average household income and population suggest that these factors do not strongly influence the allocation of budgets for Service Improvement and Enhancement projects. This reflects the city's effort to ensure equitable distribution of services and infrastructure improvements across all wards, irrespective of their income levels or population densities.
+
+However, some notable outliers are evident in the data. Ward 11 (University-Rosedale), for example, received the highest budget allocation for Service Improvement and Enhancement projects while also ranking as the second-highest in average household income. This may indicate a more targeted approach to allocating funds in higher-income areas, though the specific reasons could be tied to pressing needs such as ongoing infrastructure upgrades or community development initiatives.
+
+Other wards like Ward 3 (Etobicoke-Lakeshore) and Ward 10 (Spadina-Fort York), which have high population densities, also received significant budget allocations, suggesting that these areas are priorities for service improvements and infrastructure enhancement. 
+
+Despite these outliers, the majority of wards received similar budget allocations for Service Improvement and Enhancement projects, underscoring a city-wide strategy to enhance services uniformly for all residents.
+
+# Discussion {#sec-discussion}
+
+In this study, we expected that population density would be a major contributing factor for the budget allocation for most of the cateogries. However, we found that the relationship between population density and budget allocation varies across categories. For Growth-Related projects, population density plays a significant role in determining the budget allocation, with more populous wards receiving a larger share of the budget. This suggests that the city is prioritizing areas with higher population densities for growth-related initiatives, reflecting a focus on addressing the needs of more densely populated areas. In contrast, the relationship between average household income and budget allocation is less pronounced for Growth-Related projects, indicating a more uniform distribution of funds across wards, regardless of their income levels. Wards with higher average household incomes tend to receive more funding for Health and Safety projects, reflecting a focus on addressing the needs of wealthier areas. While budget allocation for Service Improvement and Enhancement projects is relatively consistent across wards, some outliers suggest targeted investments in specific areas, potentially driven by unique needs or ongoing infrastructure projects. Overall, our findings highlight the complex interplay between demographic and economic factors in shaping budget allocations in Toronto's wards, with implications for urban governance and equitable resource distribution.
+
+Some of the limitations of this study include the lack of detailed information on specific projects within each category, which could provide more insights into the rationale behind budget allocations. Additionally, the analysis focused on the relationship between population density, average household income, and budget allocation, but other factors such as infrastructure needs, community development priorities, and political considerations may also influence budget decisions. Future research could explore these factors in more detail to provide a comprehensive understanding of how municipal budgets are allocated and the impact of these decisions on residents' quality of life.
+
+In conclusion, this study sheds light on the relationship between demographic and economic factors and budget allocations in Toronto's wards, offering valuable insights into the city's resource distribution strategies. By understanding how population density and average household income influence budget decisions, policymakers can make more informed choices that address the diverse needs of residents and promote equitable urban development. This research contributes to the growing body of literature on urban governance and fiscal policy, providing a data-driven approach to understanding the complexities of municipal budgeting and resource allocation.
+\newpage
+
+# References
