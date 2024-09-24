@@ -19,11 +19,3 @@ The repo is structured as:
 
 ChatGPT4o (4o-mini) was used as an LLM for this project. Debugging, formating, and commenting was done using LLM.
 All chat history for the LLM usage can be found in the `inputs/llm/usage.txt` folder
-
-## Some checks
-
-- [x] Change the rproj file name so that it's not starter_folder.Rproj
-- [x] Change the README title so that it's not Starter folder
-- [ ] Remove files that you're not using
-- [x] Update comments in R scripts
-- [ ] Remove this checklist
