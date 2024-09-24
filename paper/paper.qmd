@@ -3,7 +3,7 @@ title: "Who Gets What: How Population and Income Shape Toronto’s Budget Decisi
 subtitle: "Understanding the Impact of Demographics and Economic Factors on City Spending Across 25 Wards"
 author: 
   - Aviral Bhardwaj
-thanks: "Code and data are available at: LINK."
+thanks: "Code and data are available at: https://github.com/Aviral-03/Toronto-WardWide-Budget-Analysis"
 date: today
 date-format: long
 abstract: "This study investigates how population density and average household income affect budget allocations across Toronto’s 25 wards. Using data from the city's 2023-2032 Capital Budget Plan and 2021 Ward Profiles, we analyze spending patterns in key areas like health and safety, infrastructure, and community services. Our findings reveal that higher population densities do not guarantee proportionally greater investments in essential services, while wealthier wards often receive larger capital expenditures. These insights highlight potential disparities in resource distribution, emphasizing the need for more equitable urban budget planning to address diverse community needs."
@@ -12,21 +12,6 @@ number-sections: true
 toc: true
 bibliography: references.bib
 ---
-
-```{r}
-#| include: false
-#| warning: false
-#| message: false
-
-# Download the package
-# install.packages("opendatatoronto")
-# install.packages("styler")
-# install.packages("arrow")
-# install.packages("kableExtra")
-# install.packages("ggrepel")
-# install.packages("patchwork")
-# install.packages("sf")
-```
 
 ```{r}
 #| include: false
@@ -44,6 +29,7 @@ library(knitr)
 library(kableExtra)
 library(patchwork)
 library(sf)
+library(lintr)
 ```
 
 ```{r}
@@ -68,7 +54,7 @@ Our findings reveal that wards with higher population densities do not consisten
 
 # Data {#sec-data}
 
-The raw data was sourced from the City of Toronto's Open Data Portal using the `opendatatoronto` [@openDataToronto] package. Three datasets were downloaded: `2023 Ward Profiles (25-Ward Model)`[@toronto_ward_profiles], `2023-2032 Capital Budget and Plan Details`[@toronto_budget_plan], and `City Wards`[@toronto_city_wards]. The data, provided in Excel and CSV formats, was cleaned and analyzed using R [@citeR] programming language. The `readxl` [@readxl] package was used for reading Excel files. Other R packages used include `tidyverse` [@tidyverse], `styler` [@styler], and `dplyr` [@dplyr] for creating tables and plotting graphs.
+The raw data was sourced from the City of Toronto's Open Data Portal using the `opendatatoronto` [@openDataToronto] package. Three data sets were downloaded: `2023 Ward Profiles (25-Ward Model)`[@toronto_ward_profiles], `2023-2032 Capital Budget and Plan Details`[@toronto_budget_plan], and `City Wards`[@toronto_city_wards]. The data, provided in Excel and CSV formats, was cleaned and analyzed using R [@citeR] programming language. The `readxl` [@readxl] package was used for reading Excel files. Other R packages used include `tidyverse` [@tidyverse], `styler` [@styler], and `dplyr` [@dplyr] for creating tables. The `ggplot2` [@ggplot2] and `kableExtra` [@kableExtra] were used for data visualization and table formatting. The `patchwork` [@patchwork] package was used for combining multiple plots, and `sf` [@sf] for spatial data analysis.
 
 ## Measurement
 Our research question and estimand analyse the relationship between key demographic and economic factors—specifically, population and average household income—and the budget allocation across various categories in Toronto's 25 wards. Population is a critical demographic indicator, representing the number of residents in each ward, while average household income reflects economic well-being, influencing access to resources and quality of life [@Schaeffer]. Our primary aim is to estimate the impact of these variables on budget allocations for different categories, including Health and Safety, Growth-Related expenditures, State of Good Repair, and Service Improvement and Enhancement.
@@ -97,19 +83,17 @@ The ward names were manually entered into the cleaned data and the `ward_id` was
 #| tbl-pos: "h"
 
 # Remove the first column
-ward_data |>
-  select(-1) |>
+ward_data |> 
+  select(-1) |> 
   head(5) |>
-  kable(
-    col.names = c("Ward ID", "Ward Name", "Population", "Average Household Income"),
-    booktabs = TRUE,
-    align = "c"
-  )
+  kable(col.names = c("Ward ID", "Ward Name", "Population", 
+                      "Average Household Income"), 
+        booktabs = TRUE, 
+        align = "c")
 ```
-
 ## Capital Budget and Plan Details {#sec-capital-budget}
 
-The 2023-2032 Capital Budget and Plan Details dataset [@toronto_budget_plan], published by Financial Planning and updated on May 1, 2024, provides the 10-year capital budget for Toronto's wards. This dataset covers allocations for fixed assets such as land, buildings, equipment, and new facility construction. We used it to analyze the distribution of capital budget allocations across various categories and wards. The 2023-2032 time frame was selected to align with Ward Profiles data and to reflect the planning relevance following the 2022 Municipal Elections.
+The 2023-2032 Capital Budget and Plan Details dataset [@toronto_budget_plan], published by Financial Planning and updated on May 1, 2024, provides the 10-year capital budget for Toronto's wards. This data set covers allocations for fixed assets such as land, buildings, equipment, and new facility construction. We used it to analyze the distribution of capital budget allocations across various categories and wards. The 2023-2032 time frame was selected to align with Ward Profiles data and to reflect the planning relevance following the 2022 Municipal Elections.
 
 Key columns include `Project Name`, yearly budget allocations from 2023 to 2032, `Ward Number`, `Ward`, `Category`, and `Total 10 Year` (Sum of Year 1 to 10), where the budget is in thousands of dollars (e.g., 10 = \$10,000). However,  [@tbl-capital-budget-data] shows a sample of the cleaned data and our variables of interest:
 
@@ -128,8 +112,8 @@ Rows with `CW` (city-wide budget) were removed since they were applicable to all
 capital_data |>
   select(-1) |>
   head(5) |>
-  kable(
-    col.names = c("Ward ID", "Ward Name", "Category", "Total 10-Year Budget (in 000s)"),
+  kable(col.names = c("Ward ID", "Ward Name", "Category", 
+                  "Total 10-Year Budget (in 000s)"),
     booktabs = TRUE,
     align = "c"
   )
@@ -151,7 +135,8 @@ The ward names were mapped to the `ward_id` and integrated with the Ward Profile
 #| message: false
 
 combined_data <- merge(ward_data, capital_data, by = "ward_id") |>
-  select("ward_id", "ward.x", "population", "average_household_income", "category", "total_10_year") |>
+  select("ward_id", "ward.x", "population", "average_household_income", 
+         "category", "total_10_year") |>
   rename("ward" = "ward.x")
 ```
 
@@ -177,17 +162,16 @@ download.file(url, temp_zip, mode = "wb")
 temp_dir <- tempdir()
 unzip(temp_zip, exdir = temp_dir)
 
-# Assuming the shapefile is directly in the unzipped folder and has a standard .shp extension
 shapefiles <- list.files(temp_dir, pattern = "\\.shp$", full.names = TRUE)
 
-# Read the shapefile (replace 'shapefiles[1]' with the specific file if there are multiple shapefiles)
 toronto_map <- st_read(shapefiles[1], quiet = TRUE)
 
 # Clean up the downloaded zip file
 unlink(temp_zip)
 
 # Merge analysis_data with toronto_map by ward_id
-toronto_map <- merge(toronto_map, ward_data, by.x = "AREA_NAME", by.y = "ward") |>
+toronto_map <- merge(toronto_map, ward_data, 
+                     by.x = "AREA_NAME", by.y = "ward") |>
   rename("income" = "average_household_income")
 
 color_scale <- scale_fill_gradient(low = "lightblue", high = "darkblue")
@@ -196,7 +180,8 @@ color_scale <- scale_fill_gradient(low = "lightblue", high = "darkblue")
 # Plot with facet_wrap for average household income and population
 plot1 <-ggplot() +
   geom_sf(data = toronto_map, aes(fill = population)) +
-  geom_sf_text(data = toronto_map, aes(label = ward_id), size = 2, color = "white") +
+  geom_sf_text(data = toronto_map, aes(label = ward_id), 
+               size = 2, color = "white") +
   color_scale +
   theme_minimal() +
   labs(x = "Longitude", y = "Latitude") +
