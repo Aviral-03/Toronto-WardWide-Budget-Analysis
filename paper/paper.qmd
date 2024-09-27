@@ -44,9 +44,9 @@ capital_data <- read.csv("../data/analysis_data/cleaned_capital_data.csv")
 
 # Introduction {#sec-intro}
 
-In urban governance, equitable allocation of municipal budgets is crucial for addressing the diverse social, economic, and infrastructural needs of cities. This challenge is particularly acute in Toronto, one of Canada's largest and most diverse cities, where 25 wards compete for limited resources. Effective allocation requires a careful balance, but understanding how demographic and economic factors influence these decisions remains an underexplored area. This study addresses this gap by investigating the relationship between these factors and Toronto's budget allocations, with implications for more informed, data-driven urban planning.
+In urban governance, equitable allocation of municipal budgets is crucial for addressing city's diverse social, economic, and infrastructural needs. This challenge is particularly acute in Toronto, one of Canada's largest and most diverse cities, where 25 wards compete for limited resources with ever growing population. Effective allocation requires a careful balance, but understanding how demographic and economic factors influence these decisions remains an under-explored area. This study addresses this gap by investigating the relationship between these factors and Toronto's budget allocations, with implications for more informed, data-driven urban planning. Specifically, we aim to answer the question: To what extent do demographic and economic factors contribute to an equitable distribution of municipal resources across Toronto’s wards?
 
-Following her election in 2023, Mayor Olivia Chow prioritized resolving Toronto’s housing crisis, improving transportation, and addressing social inequities [@toronto_2024_budget]. The city’s 2024 budget reflects these priorities, with notable investments in affordable housing, transit, and community safety initiatives. Simultaneously, the Chief Financial Officer underscored the importance of long-term infrastructure development, highlighting the city’s 10-year capital plan [@toronto_2024_budget]. However, it remains unclear to what extent these priorities translate into equitable budget allocations across Toronto's wards, particularly in health and safety or growth-related expenditures.
+Historical budget data reveals a pattern of uneven investment, particularly in areas with high population density and lower-income residents, which has contributed to growing disparities in service delivery and infrastructure quality [@ferguson2024compromised]. Following her election in 2023, Mayor Olivia Chow prioritized resolving Toronto’s housing crisis, improving transportation, and addressing social inequities [@toronto_2024_budget]. The city’s 2024 budget reflects these priorities, with notable investments in affordable housing, transit, and community safety initiatives. Simultaneously, the Chief Financial Officer underscored the importance of long-term infrastructure development, highlighting the city’s 10-year capital plan [@toronto_2024_budget]. However, it remains unclear to what extent these priorities translate into equitable budget allocations across Toronto's wards, particularly in health and safety or growth-related expenditures.
 
 To explore this issue, this study leverages multiple datasets from the City of Toronto’s Open Data Portal, including demographic information from the 2021 Ward Profiles and budget data from the 2023-2032 Capital Budget Plan. Our analysis focuses on two key demographic factors—population density and average household income—and examines their causal effect on budget allocations across categories such as Health and Safety, Growth-Related Expenditures, and Service Improvement. By focusing on these variables, we aim to uncover whether Toronto’s budget distribution aligns with the priorities of Mayor Chow and the city’s Chief Financial Officer.
 
@@ -57,14 +57,15 @@ Our findings reveal that wards with higher population densities do not consisten
 The raw data was sourced from the City of Toronto's Open Data Portal using the `opendatatoronto` [@openDataToronto] package. Three data sets were downloaded: `2023 Ward Profiles (25-Ward Model)`[@toronto_ward_profiles], `2023-2032 Capital Budget and Plan Details`[@toronto_budget_plan], and `City Wards`[@toronto_city_wards]. The data, provided in Excel and CSV formats, was cleaned and analyzed using R [@citeR] programming language. The `readxl` [@readxl] package was used for reading Excel files. Other R packages used include `tidyverse` [@tidyverse], `styler` [@styler], and `dplyr` [@dplyr] for creating tables. The `ggplot2` [@ggplot2] and `kableExtra` [@kableExtra] were used for data visualization and table formatting. The `patchwork` [@patchwork] package was used for combining multiple plots, and `sf` [@sf] for spatial data analysis.
 
 ## Measurement
-Our research question and estimand analyse the relationship between key demographic and economic factors—specifically, population and average household income—and the budget allocation across various categories in Toronto's 25 wards. Population is a critical demographic indicator, representing the number of residents in each ward, while average household income reflects economic well-being, influencing access to resources and quality of life [@Schaeffer]. Our primary aim is to estimate the impact of these variables on budget allocations for different categories, including Health and Safety, Growth-Related expenditures, State of Good Repair, and Service Improvement and Enhancement.
+Our research question and estimand analyse the relationship between key demographic and economic factors—specifically, population and average household income—and the budget allocation across various categories in Toronto's 25 wards. Population is a critical demographic indicator, representing the number of residents in each ward, while average household income reflects economic well-being, influencing access to resources and quality of life [@Schaeffer]. Therefore, these two variables of interest were choosen for the analysis. Our primary aim is to estimate the impact of these variables on budget allocations for different categories, including Health and Safety, Growth-Related expenditures, State of Good Repair, and Service Improvement and Enhancement.
 
 Population density is expected to affect the demand for services and infrastructure, while average household income may shape how resources are distributed across wards, reflecting broader economic disparities. The estimand is the causal effect of these factors on the allocation of funds, and the estimator will quantify how shifts in population and income levels influence budgetary decisions. By understanding this relationship, we aim to offer insights into how demographic and economic variables drive municipal spending patterns in different categories across the city.
 
-
 ## Ward Profiles (25-Ward Model) {#sec-ward-profiles}
 
-The 2021 Ward Profiles [@toronto_ward_profiles], based on the 25-Ward model were provided by City Planning. These profiles included census data from the 2021, 2016, and 2011 Census of Population, covering demographic, social, and economic information for each ward in Toronto. This data-set was included in this analysis to provide insights into the population and average household income for each ward, providing insights into the city's socioeconomic landscape. 25-Ward model was used instead of the 44-Ward model as it was the most recent data available at the time of analysis and matched the Capital Budget data.
+The 2021 Ward Profiles [@toronto_ward_profiles], based on the 25-Ward model were provided by City Planning. These profiles included census data from the 2021, 2016, and 2011 Census of Population, covering demographic, social, and economic information for each ward in Toronto. These variables were collected through methods including online responses, mailed questionnaires, the Census Help Line, and enumerators [@nhs_canada]. 
+
+This data-set was included in this analysis to provide insights into the population and average household income for each ward, providing insights into the city's socioeconomic landscape. 25-Ward model was used instead of the 44-Ward model as it was the most recent data available at the time of analysis and matched the Capital Budget data.
 
 The data was stored in an Excel workbook with multiple tabs, but for this analysis, we used the first tab, `2016 Census One variable`, which contains data for all 25 wards (Ward 1, Ward 2, ..., Ward 25). After cleaning, the data was saved in CSV and Parquet formats, with the following columns:
 
@@ -73,7 +74,7 @@ The data was stored in an Excel workbook with multiple tabs, but for this analys
 -   `population`: total population,
 -   `income`: average household income.
 
-The ward names were manually entered into the cleaned data and the `ward_id` was set as the row name. A sample of the data can be seen in [@tbl-ward-profile-data]. These variables were collected through methods including online responses, mailed questionnaires, the Census Help Line, and enumerators [@nhs_canada].
+The ward names were manually entered into the cleaned data and the `ward_id` was set as the row name. A sample of the data can be seen in [@tbl-ward-profile-data].
 
 ```{r}
 #| echo: false
@@ -93,7 +94,9 @@ ward_data |>
 ```
 ## Capital Budget and Plan Details {#sec-capital-budget}
 
-The 2023-2032 Capital Budget and Plan Details dataset [@toronto_budget_plan], published by Financial Planning and updated on May 1, 2024, provides the 10-year capital budget for Toronto's wards. This data set covers allocations for fixed assets such as land, buildings, equipment, and new facility construction. We used it to analyze the distribution of capital budget allocations across various categories and wards. The 2023-2032 time frame was selected to align with Ward Profiles data and to reflect the planning relevance following the 2022 Municipal Elections.
+The 2023-2032 Capital Budget and Plan Details dataset [@toronto_budget_plan], published by Toronto's Financial Planning Division and updated on May 1, 2024, provides the 10-year capital budget breakdown for the city’s wards. This budget is developed through a collaborative process, where city staff prepare an initial draft, which is then reviewed by the Budget Committee. Input is solicited from Toronto residents and businesses, and subsequently, the Mayor presents the finalized budget proposal by February 1. City Council reviews and considers this budget within 30 days [@toronto_2024_budget]. Through this process, City Council makes decisions about City services, programs and infrastructure that impact the Toronto community.
+
+This data set covers allocations for fixed assets such as land, buildings, equipment, and new facility construction. We used it to analyze the distribution of capital budget allocations across various categories and wards. The 2023-2032 time frame was selected to align with Ward Profiles data and to reflect the planning relevance following the 2022 Municipal Elections.
 
 Key columns include `Project Name`, yearly budget allocations from 2023 to 2032, `Ward Number`, `Ward`, `Category`, and `Total 10 Year` (Sum of Year 1 to 10), where the budget is in thousands of dollars (e.g., 10 = \$10,000). However,  [@tbl-capital-budget-data] shows a sample of the cleaned data and our variables of interest:
 
@@ -121,7 +124,9 @@ capital_data |>
 
 ## City Wards {#sec-ward-names}
 
-The City Wards dataset [@toronto_city_wards], published by the City Clerk's Office and last updated on July 22, 2024, contains geographical information about each ward, including the ward ID, ward name, and ward boundary. This dataset, effective January 1, 2024, was used to map the `ward_id` to the ward name in the cleaned data. Key columns include:
+The City Wards dataset [@toronto_city_wards], published by the City Clerk's Office and last updated on July 22, 2024, contains geographical information about each ward, including the ward ID, ward name, and ward boundary. These ward boundaries were decided as a part of ` Bill 5, Better Local Government Act` in 2018, reducing the number of wards from 47 to 25 [@toronto_city_wards].
+
+This dataset, effective January 1, 2024, was used to map the `ward_id` to the ward name in the cleaned data. Key columns include:
 
 -   `ward_id`: unique identifier for each ward,
 -   `ward`: ward name,
@@ -145,7 +150,7 @@ combined_data <- merge(ward_data, capital_data, by = "ward_id") |>
 #| message: false
 #| warning: false
 #| label: fig-toronto-map-population
-#| fig-cap: "Map of Toronto highlighting the population by ward"
+#| fig-cap: "Map of Toronto highlighting the population and income densities by ward"
 #| fig.pos: 'H'
 #| fig.height: 5
 
@@ -239,8 +244,7 @@ combined_data |>
     population = "Population"
   ))) +
   theme_minimal() +
-  labs(x = "Average Household Income / Population",
-       y = "Total 10-Year Budget (in 000s)")
+  labs(y = "Total 10-Year Budget (in 000s)")
 ```
 
 [@fig-health-safety-budget] illustrates the relationship between average household income, population, and the total 10-year budget allocation for Health and Safety projects. The linear regression lines indicate a positive correlation, suggesting that higher average household incomes and larger populations are associated with increased budget allocations for Health and Safety.
@@ -258,7 +262,7 @@ It is important to note that some data points are missing in the plot for other 
 #| message: false
 #| warning: false
 #| label: fig-growth-related-budget
-#| fig.cap: "Growth Related Budget"
+#| fig.cap: "Growth Related Budget by Ward"
 #| fig-pos: "h"
 #| fig.width: 10
 #| fig.height: 5
@@ -279,8 +283,7 @@ combined_data |>
     population = "Population"
   ))) +
   theme_minimal() +
-  labs(x = "Average Household Income / Population",
-       y = "Total 10-Year Budget (in 000s)")
+  labs(y = "Total 10-Year Budget (in 000s)")
 
 ```
 
@@ -310,8 +313,7 @@ combined_data |>
     population = "Population"
   ))) +
   theme_minimal() +
-  labs(x = "Average Household Income / Population",
-       y = "Total 10-Year Budget (in 000s)")
+  labs(y = "Total 10-Year Budget (in 000s)")
 
 ```
 
@@ -347,8 +349,7 @@ combined_data |>
     population = "Population"
   ))) +
   theme_minimal() +
-  labs(x = "Average Household Income / Population",
-       y = "Total 10-Year Budget (in 000s)")
+  labs(y = "Total 10-Year Budget (in 000s)")
 
 ```
 
@@ -364,11 +365,16 @@ Despite these outliers, the majority of wards received similar budget allocation
 
 # Discussion {#sec-discussion}
 
-In this study, we expected that population density would be a major contributing factor for the budget allocation for most of the cateogries. However, we found that the relationship between population density and budget allocation varies across categories. For Growth-Related projects, population density plays a significant role in determining the budget allocation, with more populous wards receiving a larger share of the budget. This suggests that the city is prioritizing areas with higher population densities for growth-related initiatives, reflecting a focus on addressing the needs of more densely populated areas. In contrast, the relationship between average household income and budget allocation is less pronounced for Growth-Related projects, indicating a more uniform distribution of funds across wards, regardless of their income levels. Wards with higher average household incomes tend to receive more funding for Health and Safety projects, reflecting a focus on addressing the needs of wealthier areas. While budget allocation for Service Improvement and Enhancement projects is relatively consistent across wards, some outliers suggest targeted investments in specific areas, potentially driven by unique needs or ongoing infrastructure projects. Overall, our findings highlight the complex interplay between demographic and economic factors in shaping budget allocations in Toronto's wards, with implications for urban governance and equitable resource distribution.
+In this study, we anticipated that population density would influence budget allocations across categories. However, our findings show that this relationship varies by category. For Growth-Related projects, population density significantly affects budget distribution, with more populous wards receiving a larger share. This indicates that the city is prioritizing infrastructure development in densely populated areas. However, for categories like Health and Safety, population density is not as strong a determinant, and in some cases, wards with high population density receive less funding than expected.
 
-Some of the limitations of this study include the lack of detailed information on specific projects within each category, which could provide more insights into the rationale behind budget allocations. Additionally, the analysis focused on the relationship between population density, average household income, and budget allocation, but other factors such as infrastructure needs, community development priorities, and political considerations may also influence budget decisions. Future research could explore these factors in more detail to provide a comprehensive understanding of how municipal budgets are allocated and the impact of these decisions on residents' quality of life.
+We also found that wealthier wards receive more funding for Health and Safety projects. This suggests that budget allocations in these categories may be influenced by higher property values, which could pressure the city to maintain and protect these areas more intensively. Additionally, wealthier communities may have more political influence, potentially shaping the city's spending priorities.
 
-In conclusion, this study sheds light on the relationship between demographic and economic factors and budget allocations in Toronto's wards, offering valuable insights into the city's resource distribution strategies. By understanding how population density and average household income influence budget decisions, policymakers can make more informed choices that address the diverse needs of residents and promote equitable urban development. This research contributes to the growing body of literature on urban governance and fiscal policy, providing a data-driven approach to understanding the complexities of municipal budgeting and resource allocation.
+Budget allocations for Service Improvement and Enhancement projects were relatively consistent across wards, though some exceptions indicate targeted investments in areas with specific ongoing projects or unique needs. These deviations could be driven by immediate infrastructure requirements or political priorities.
+
+One limitation of this study is the lack of detailed data on specific projects within each budget category, which could provide further insights into why certain wards receive more or less funding. Additionally, while this analysis focused on population density and average household income, other factors like infrastructure needs, community priorities, and political considerations likely play a role in budget decisions. Future research should explore these variables to build a more complete picture of how municipal budgets are allocated. In terms of policy recommendations, the city should adopt equity-based budgeting to ensure underfunded, high-density wards receive adequate resources, particularly for essential services like health and safety. Toronto could also implement a baseline funding model for high-need areas and enhance public engagement in the budget process, ensuring that residents of under served wards have a voice in resource allocation. These actions would promote more transparent, balanced, and equitable urban governance.
+
+In conclusion, this study highlights the complexity of budget allocation in Toronto’s wards. Population density and income levels both play roles in shaping budget distributions, though not always in expected ways. Understanding these dynamics can help policymakers make more equitable resource allocation decisions that better address the needs of all residents.
+
 \newpage
 
 # References
